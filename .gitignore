@@ -1,0 +1,7 @@
+__pycache__
+*.egg-info
+notebooks/*.png
+notebooks/*.pdf
+*.md
+data/
+*.csv
