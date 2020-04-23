@@ -117,6 +117,10 @@ def add_zone_percentage(percentages, zone, y, name, ax):
 def make_phase_plot_for_dataset(
     data_path: pathlib.Path, 
     dataset_name: str,
+    home_possession_name = "possesion",
+    away_counter_name = "negative_transition",
+    away_possession_name = "pressing",
+    home_counter_name = "positive_transition",
     file_suffix: str = "",
     ymin: float = -35,
     ymax: float = 35,
@@ -124,7 +128,14 @@ def make_phase_plot_for_dataset(
     xmax: float = 11,
 ):
     # GET AGGREGATED DATA
-    dfs = data.get_dataframes_for_phases(data_path / dataset_name, file_suffix)
+    dfs = data.get_dataframes_for_phases(
+        data_path / dataset_name, 
+        file_suffix,
+        home_possession_name,
+        away_counter_name,
+        away_possession_name,
+        home_counter_name,
+    )
 
     (
         own_buildup,

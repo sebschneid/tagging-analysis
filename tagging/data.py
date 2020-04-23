@@ -1,5 +1,5 @@
-import pathlib
 import os
+import pathlib
 from typing import Dict, List, Tuple
 
 import pandas as pd
@@ -11,12 +11,14 @@ ZONES_STR = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"]
 ZONES = list(range(12))
 
 
-def extract_single_csv(input_file, output_path: pathlib.Path, dataset_name: str, file_from_disk=True):
+def extract_single_csv(input_file: pathlib.Path, output_path: pathlib.Path, file_from_disk=True):
     if file_from_disk:
         with open(input_file) as file:
             content = np.array(file.readlines())
+            dataset_name = input_file.name.rstrip(".csv")
     else:
         content = np.array(input_file.readlines())
+        dataset_name = "upload"
 
     if not os.path.exists(output_path):
         os.mkdir(output_path)
@@ -39,26 +41,32 @@ def extract_single_csv(input_file, output_path: pathlib.Path, dataset_name: str,
 
 
 def get_dataframes_for_phases(
-    file_path: pathlib.Path, suffix: str = ""
+    file_path: pathlib.Path, 
+    suffix: str,    
+    home_possession_name: str,
+    away_counter_name: str,
+    away_possession_name: str,
+    home_counter_name: str,
 ) -> Dict[str, pd.DataFrame]:
     # file_path = data_path / filename
     # files = os.listdir(path)
 
-    file_pressing = f"pressing{suffix}.csv"
-    file_possession = f"possesion{suffix}.csv"
-    file_pos_transition = f"positive_transition{suffix}.csv"
-    file_neg_transition = f"negative_transition{suffix}.csv"
 
-    df_pressing = preprocess_data(file_path, file_pressing)
-    df_possession = preprocess_data(file_path, file_possession)
-    df_neg_transition = preprocess_data(file_path, file_neg_transition)
-    df_pos_transition = preprocess_data(file_path, file_pos_transition)
+    file_home_possession = f"{home_possession_name}{suffix}.csv"
+    file_away_possession = f"{away_possession_name}{suffix}.csv"
+    file_home_counter = f"{home_counter_name}{suffix}.csv"
+    file_away_counter = f"{away_counter_name}{suffix}.csv"
+
+    df_home_possession = preprocess_data(file_path, file_home_possession)
+    df_away_possession = preprocess_data(file_path, file_away_possession)
+    df_home_counter = preprocess_data(file_path, file_home_counter)
+    df_away_counter = preprocess_data(file_path, file_away_counter)
 
     return {
-        "possession": df_possession,
-        "pressing": df_pressing,
-        "pos_transition": df_pos_transition,
-        "neg_transition": df_neg_transition,
+        "home_possession": df_home_possession,
+        "away_possession": df_away_possession,
+        "home_counter": df_home_counter,
+        "away_counter": df_away_counter,
     }
 
 
@@ -85,13 +93,13 @@ def preprocess_data(
 def get_phase_peak_sums(
     dfs: Dict[str, pd.DataFrame]
 ) -> Tuple[pd.Series, pd.Series, pd.Series, pd.Series]:
-    own_buildup = dfs["possession"][ZONES].sum().reindex_like(pd.Series(ZONES))
+    own_buildup = dfs["home_possession"][ZONES].sum().reindex_like(pd.Series(ZONES))
     own_counter = (
-        dfs["pos_transition"][ZONES].sum().reindex_like(pd.Series(ZONES))
+        dfs["home_counter"][ZONES].sum().reindex_like(pd.Series(ZONES))
     )
-    opp_buildup = dfs["pressing"][ZONES].sum().reindex_like(pd.Series(ZONES))
+    opp_buildup = dfs["away_possession"][ZONES].sum().reindex_like(pd.Series(ZONES))
     opp_counter = (
-        dfs["neg_transition"][ZONES].sum().reindex_like(pd.Series(ZONES))
+        dfs["away_counter"][ZONES].sum().reindex_like(pd.Series(ZONES))
     )
 
     return own_buildup, own_counter, opp_buildup, opp_counter
