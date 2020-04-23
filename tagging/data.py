@@ -1,5 +1,9 @@
+import pathlib
+import os
 from typing import Dict, List, Tuple
+
 import pandas as pd
+import numpy as np
 
 from tagging import helpers
 
@@ -7,10 +11,61 @@ ZONES_STR = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"]
 ZONES = list(range(12))
 
 
+def extract_single_csv(input_file, output_path: pathlib.Path, dataset_name: str, file_from_disk=True):
+    if file_from_disk:
+        with open(input_file) as file:
+            content = np.array(file.readlines())
+    else:
+        content = np.array(input_file.readlines())
+
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
+
+    output_folder = output_path / dataset_name
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)
+        
+    category_starts = np.argwhere(["CATEGORY" in line for line in content]).flatten()
+
+    category_ends = category_starts[1:] - 1
+    category_ends = np.concatenate([category_ends, np.array([len(content)])])
+    
+    for start, end in zip(category_starts, category_ends):
+        category = content[start].split(";")[0].lower().replace("category: ", "").strip().replace(" ", "_")
+        output_filepath = output_folder / f"{category}.csv"
+        with open(output_filepath, "w") as file:
+            file.writelines(content[start:end])
+        print(f"Wrote {category} to {output_filepath}.")
+
+
+def get_dataframes_for_phases(
+    file_path: pathlib.Path, suffix: str = ""
+) -> Dict[str, pd.DataFrame]:
+    # file_path = data_path / filename
+    # files = os.listdir(path)
+
+    file_pressing = f"pressing{suffix}.csv"
+    file_possession = f"possesion{suffix}.csv"
+    file_pos_transition = f"positive_transition{suffix}.csv"
+    file_neg_transition = f"negative_transition{suffix}.csv"
+
+    df_pressing = preprocess_data(file_path, file_pressing)
+    df_possession = preprocess_data(file_path, file_possession)
+    df_neg_transition = preprocess_data(file_path, file_neg_transition)
+    df_pos_transition = preprocess_data(file_path, file_pos_transition)
+
+    return {
+        "possession": df_possession,
+        "pressing": df_pressing,
+        "pos_transition": df_pos_transition,
+        "neg_transition": df_neg_transition,
+    }
+
+
 def preprocess_data(
-    path: str, file: str, time_columns: List[str] = ["time", "start", "stop"]
+    file_path: pathlib.Path, filename: str, time_columns: List[str] = ["time", "start", "stop"]
 ) -> pd.DataFrame:
-    df = pd.read_csv(f"{path}/{file}", skiprows=1, header=0, sep=";")
+    df = pd.read_csv(file_path / filename, skiprows=1, header=0, sep=";")
     df = df.rename(helpers.normalize_column_name, axis="columns")
     for column in time_columns:
         df = df.assign(
@@ -25,29 +80,6 @@ def preprocess_data(
     df = df.rename(columns={column: int(column) for column in ZONES_STR})
     return df
 
-
-def get_dataframes_for_phases(
-    dataset, suffix: str = ""
-) -> Dict[str, pd.DataFrame]:
-    path = f"../data/{dataset}"
-    # files = os.listdir(path)
-
-    file_pressing = f"pressing{suffix}.csv"
-    file_possession = f"possesion{suffix}.csv"
-    file_pos_transition = f"positive_transition{suffix}.csv"
-    file_neg_transition = f"negative_transition{suffix}.csv"
-
-    df_pressing = preprocess_data(path, file_pressing)
-    df_possession = preprocess_data(path, file_possession)
-    df_neg_transition = preprocess_data(path, file_neg_transition)
-    df_pos_transition = preprocess_data(path, file_pos_transition)
-
-    return {
-        "possession": df_possession,
-        "pressing": df_pressing,
-        "pos_transition": df_pos_transition,
-        "neg_transition": df_neg_transition,
-    }
 
 
 def get_phase_peak_sums(

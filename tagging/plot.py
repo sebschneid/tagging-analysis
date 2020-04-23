@@ -1,3 +1,5 @@
+import pathlib
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -113,7 +115,8 @@ def add_zone_percentage(percentages, zone, y, name, ax):
 
 
 def make_phase_plot_for_dataset(
-    dataset: str,
+    data_path: pathlib.Path, 
+    dataset_name: str,
     file_suffix: str = "",
     ymin: float = -35,
     ymax: float = 35,
@@ -121,7 +124,7 @@ def make_phase_plot_for_dataset(
     xmax: float = 11,
 ):
     # GET AGGREGATED DATA
-    dfs = data.get_dataframes_for_phases(dataset, file_suffix)
+    dfs = data.get_dataframes_for_phases(data_path / dataset_name, file_suffix)
 
     (
         own_buildup,
@@ -302,7 +305,7 @@ def make_phase_plot_for_dataset(
     ax.text(
         TITLE_X,
         TITLE_HEIGHT,
-        dataset,
+        dataset_name,
         transform=ax.transAxes,
         fontsize=26,
         fontweight="bold",
@@ -310,8 +313,8 @@ def make_phase_plot_for_dataset(
         ha="right",
         va="bottom",
     )
-    fig.savefig(f"progression_{dataset}.png", bbox_inches="tight")
-
+    
+    return fig, ax
 
 def four_tile_plot(dataset: str, file_suffix: str = "") -> None:
     fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 10))
@@ -320,4 +323,5 @@ def four_tile_plot(dataset: str, file_suffix: str = "") -> None:
         df[zones].sum().plot.bar(title=name, ax=ax)
     for ax in axes.flatten():
         ax.set_ylim(0, 14)
-    plt.savefig(f"{dataset}_zones.png")
+        
+    return fig, axes
