@@ -122,6 +122,7 @@ def make_phase_plot_for_dataset(
     away_possession_name = "pressing",
     home_counter_name = "positive_transition",
     file_suffix: str = "",
+    title: str = "",
     ymin: float = -35,
     ymax: float = 35,
     xmin: float = 0,
@@ -316,7 +317,7 @@ def make_phase_plot_for_dataset(
     ax.text(
         TITLE_X,
         TITLE_HEIGHT,
-        dataset_name,
+        title,
         transform=ax.transAxes,
         fontsize=26,
         fontweight="bold",
