@@ -302,7 +302,7 @@ def make_phase_plot_for_dataset(
         xlim=(xmin - 1, xmax + 1),
         ylim=(ymin, ymax),
         ylabel="Number of attacks",
-        xlabel="Progression peak (most outplayed opponent's during attack)",
+        xlabel="Progression peak (most outplayed opponents during attack)",
     )
     ax.set_yticks(np.arange(ymin, ymax + 1, 1), minor=True)
     ax.set_yticks(np.arange(ymin, ymax + 1, 5))
