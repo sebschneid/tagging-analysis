@@ -18,6 +18,8 @@ dataset_name = st.text_input("Enter the name of your dataset", value="Test")
 naming_scheme = st.radio("Naming Scheme for phases", ["old", "new"])
 naming_suffix = st.text_input("Suffix for relevant phase names", value="_peak")
 uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+ymin = st.slider("Minimal value on y axis", min_value=-50, max_value=0, value=-35, step=1)
+ymax = st.slider("Maximal value on y axis", min_value=0, max_value=50, value=35, step=1)
 
 home_possession_name = "possesion"
 away_counter_name = "negative_transition"
@@ -43,6 +45,8 @@ if uploaded_file is not None:
             home_counter_name,
             title=dataset_name,
             file_suffix=naming_suffix,
+            ymin=ymin,
+            ymax=ymax,
         )
 
         shutil.rmtree(data_path / upload_folder_name)
