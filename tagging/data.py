@@ -13,7 +13,9 @@ ZONES_STR = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"]
 ZONES = list(range(12))
 
 
-def extract_single_csv(input_file: pathlib.Path, output_path: pathlib.Path, file_from_disk=True):
+def extract_single_csv(
+    input_file: pathlib.Path, output_path: pathlib.Path, file_from_disk=True
+):
     if file_from_disk:
         with open(input_file) as file:
             content = np.array(file.readlines())
@@ -28,19 +30,23 @@ def extract_single_csv(input_file: pathlib.Path, output_path: pathlib.Path, file
     output_folder = output_path / dataset_name
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
-        
-    category_starts = np.argwhere(["CATEGORY" in line for line in content]).flatten()
+
+    category_starts = np.argwhere(
+        ["CATEGORY" in line for line in content]
+    ).flatten()
 
     category_ends = category_starts[1:] - 1
     category_ends = np.concatenate([category_ends, np.array([len(content)])])
-    
+
     for start, end in zip(category_starts, category_ends):
         category_string = content[start].split(";")[0]
-        category_regex_pattern = r'[^-a-z_]+'
-        
-        category_slug = slugify(category_string, separator='_', regex_pattern=category_regex_pattern)
+        category_regex_pattern = r"[^-a-z_]+"
+
+        category_slug = slugify(
+            category_string, separator="_", regex_pattern=category_regex_pattern
+        )
         category = category_slug.replace("category_", "")
-        
+
         output_filepath = output_folder / f"{category}.csv"
         with open(output_filepath, "w") as file:
             file.writelines(content[start:end])
@@ -48,8 +54,8 @@ def extract_single_csv(input_file: pathlib.Path, output_path: pathlib.Path, file
 
 
 def get_dataframes_for_phases(
-    file_path: pathlib.Path, 
-    suffix: str,    
+    file_path: pathlib.Path,
+    suffix: str,
     home_possession_name: str,
     away_counter_name: str,
     away_possession_name: str,
@@ -74,7 +80,9 @@ def get_dataframes_for_phases(
 
 
 def preprocess_data(
-    file_path: pathlib.Path, filename: str, time_columns: List[str] = ["time", "start", "stop"]
+    file_path: pathlib.Path,
+    filename: str,
+    time_columns: List[str] = ["time", "start", "stop"],
 ) -> pd.DataFrame:
     df = pd.read_csv(file_path / filename, skiprows=1, header=0, sep=";")
     df = df.rename(helpers.normalize_column_name, axis="columns")
@@ -92,15 +100,18 @@ def preprocess_data(
     return df
 
 
-
 def get_phase_peak_sums(
     dfs: Dict[str, pd.DataFrame]
 ) -> Tuple[pd.Series, pd.Series, pd.Series, pd.Series]:
-    own_buildup = dfs["home_possession"][ZONES].sum().reindex_like(pd.Series(ZONES))
+    own_buildup = (
+        dfs["home_possession"][ZONES].sum().reindex_like(pd.Series(ZONES))
+    )
     own_counter = (
         dfs["home_counter"][ZONES].sum().reindex_like(pd.Series(ZONES))
     )
-    opp_buildup = dfs["away_possession"][ZONES].sum().reindex_like(pd.Series(ZONES))
+    opp_buildup = (
+        dfs["away_possession"][ZONES].sum().reindex_like(pd.Series(ZONES))
+    )
     opp_counter = (
         dfs["away_counter"][ZONES].sum().reindex_like(pd.Series(ZONES))
     )

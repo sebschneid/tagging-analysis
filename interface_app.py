@@ -6,10 +6,10 @@ import streamlit as st
 from tagging import data, plot
 
 
-#data_path = pathlib.Path("../data")
-#output_path = pathlib.Path("./test_output")
-#dataset = "solin"
-#data_file = "solin.csv"
+# data_path = pathlib.Path("../data")
+# output_path = pathlib.Path("./test_output")
+# dataset = "solin"
+# data_file = "solin.csv"
 
 data_path = pathlib.Path("/tmp")
 upload_folder_name = "upload"
@@ -32,11 +32,11 @@ if naming_scheme == "new":
 
 if uploaded_file is not None:
     data.extract_single_csv(uploaded_file, data_path, file_from_disk=False)
-    
+
     if st.button("Create graphs"):
         fig, ax = plot.make_phase_plot_for_dataset(
-            data_path, 
-            upload_folder_name, 
+            data_path,
+            upload_folder_name,
             home_possession_name,
             away_counter_name,
             away_possession_name,
@@ -44,8 +44,6 @@ if uploaded_file is not None:
             title=dataset_name,
             file_suffix=naming_suffix,
         )
-    
+
         shutil.rmtree(data_path / upload_folder_name)
         st.pyplot(fig)
-    
-    

@@ -115,12 +115,12 @@ def add_zone_percentage(percentages, zone, y, name, ax):
 
 
 def make_phase_plot_for_dataset(
-    data_path: pathlib.Path, 
+    data_path: pathlib.Path,
     dataset_name: str,
-    home_possession_name = "possesion",
-    away_counter_name = "negative_transition",
-    away_possession_name = "pressing",
-    home_counter_name = "positive_transition",
+    home_possession_name="possesion",
+    away_counter_name="negative_transition",
+    away_possession_name="pressing",
+    home_counter_name="positive_transition",
     file_suffix: str = "",
     title: str = "",
     ymin: float = -35,
@@ -130,7 +130,7 @@ def make_phase_plot_for_dataset(
 ):
     # GET AGGREGATED DATA
     dfs = data.get_dataframes_for_phases(
-        data_path / dataset_name, 
+        data_path / dataset_name,
         file_suffix,
         home_possession_name,
         away_counter_name,
@@ -325,8 +325,9 @@ def make_phase_plot_for_dataset(
         ha="right",
         va="bottom",
     )
-    
+
     return fig, ax
+
 
 def four_tile_plot(dataset: str, file_suffix: str = "") -> None:
     fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(16, 10))
@@ -335,5 +336,5 @@ def four_tile_plot(dataset: str, file_suffix: str = "") -> None:
         df[zones].sum().plot.bar(title=name, ax=ax)
     for ax in axes.flatten():
         ax.set_ylim(0, 14)
-        
+
     return fig, axes
