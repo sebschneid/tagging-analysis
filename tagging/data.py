@@ -1,9 +1,11 @@
 import os
 import pathlib
+import string
 from typing import Dict, List, Tuple
 
 import pandas as pd
 import numpy as np
+from slugify import slugify
 
 from tagging import helpers
 
@@ -33,11 +35,16 @@ def extract_single_csv(input_file: pathlib.Path, output_path: pathlib.Path, file
     category_ends = np.concatenate([category_ends, np.array([len(content)])])
     
     for start, end in zip(category_starts, category_ends):
-        category = content[start].split(";")[0].lower().replace("category: ", "").strip().replace(" ", "_")
+        category_string = content[start].split(";")[0]
+        category_regex_pattern = r'[^-a-z_]+'
+        
+        category_slug = slugify(category_string, separator='_', regex_pattern=category_regex_pattern)
+        category = category_slug.replace("category_", "")
+        
         output_filepath = output_folder / f"{category}.csv"
         with open(output_filepath, "w") as file:
             file.writelines(content[start:end])
-        print(f"Wrote {category} to {output_filepath}.")
+        print(f"Wrote {category} to {output_filepath}")
 
 
 def get_dataframes_for_phases(
@@ -48,10 +55,6 @@ def get_dataframes_for_phases(
     away_possession_name: str,
     home_counter_name: str,
 ) -> Dict[str, pd.DataFrame]:
-    # file_path = data_path / filename
-    # files = os.listdir(path)
-
-
     file_home_possession = f"{home_possession_name}{suffix}.csv"
     file_away_possession = f"{away_possession_name}{suffix}.csv"
     file_home_counter = f"{home_counter_name}{suffix}.csv"

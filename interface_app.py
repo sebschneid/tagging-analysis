@@ -23,12 +23,13 @@ home_possession_name = "possesion"
 away_counter_name = "negative_transition"
 away_possession_name = "pressing"
 home_counter_name = "positive_transition"
+
 if naming_scheme == "new":
-    home_possession_name = "home_possession"
-    away_counter_name = "away_counter"
-    away_possession_name = "away_possession"
-    home_counter_name = "home_counter"
-        
+    home_possession_name = "possesion_home"
+    away_counter_name = "counter_away"
+    away_possession_name = "possession_away"
+    home_counter_name = "counter_home"
+
 if uploaded_file is not None:
     data.extract_single_csv(uploaded_file, data_path, file_from_disk=False)
     
