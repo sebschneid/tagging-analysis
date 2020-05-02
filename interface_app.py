@@ -12,14 +12,28 @@ from tagging import data, plot
 # data_file = "solin.csv"
 
 data_path = pathlib.Path("/tmp")
-upload_folder_name = "upload"
+upload_path = data_path / "upload"
 
-dataset_name = st.text_input("Enter the name of your dataset", value="Test")
+uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+st.header("Dataset format")
 naming_scheme = st.radio("Naming Scheme for phases", ["old", "new"])
 naming_suffix = st.text_input("Suffix for relevant phase names", value="_peak")
-uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-ymin = st.slider("Minimal value on y axis", min_value=-50, max_value=0, value=-35, step=1)
-ymax = st.slider("Maximal value on y axis", min_value=0, max_value=50, value=35, step=1)
+
+st.sidebar.header("Plot Style")
+ymin = st.sidebar.number_input(
+    "Minimal value on y axis", min_value=-50, max_value=0, value=-35, step=1
+)
+ymax = st.sidebar.number_input(
+    "Maximal value on y axis", min_value=0, max_value=50, value=35, step=1
+)
+
+st.sidebar.header("Match information")
+match_meta = st.sidebar.text_input("Match Metainfo", value="Year, League")
+team_home = st.sidebar.text_input("Home team name", value="HomeTeam")
+team_away = st.sidebar.text_input("Away team name", value="AwayTeam")
+score_home = st.sidebar.number_input("Home score", value=0, min_value=0)
+score_away = st.sidebar.number_input("Away score", value=0, min_value=0)
+result = f"{score_home} - {score_away}"
 
 home_possession_name = "possesion"
 away_counter_name = "negative_transition"
@@ -37,17 +51,19 @@ if uploaded_file is not None:
 
     if st.button("Create graphs"):
         fig, ax = plot.make_phase_plot_for_dataset(
-            data_path,
-            upload_folder_name,
+            upload_path,
             home_possession_name,
             away_counter_name,
             away_possession_name,
             home_counter_name,
-            title=dataset_name,
             file_suffix=naming_suffix,
             ymin=ymin,
             ymax=ymax,
+            home_team=team_home,
+            away_team=team_away,
+            result=result,
+            match_meta=match_meta,
         )
 
-        shutil.rmtree(data_path / upload_folder_name)
+        shutil.rmtree(upload_path)
         st.pyplot(fig)
