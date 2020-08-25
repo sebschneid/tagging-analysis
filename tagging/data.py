@@ -100,6 +100,11 @@ def preprocess_data(
     return df
 
 
+def filter_time(df: pd.DataFrame, seconds_start, seconds_stop, time_column = "start_seconds") -> pd.DataFrame:
+    return df.loc[(df[time_column] >= seconds_start) & (df[time_column] <= seconds_stop)]
+    
+
+
 def get_phase_peak_sums(
     dfs: Dict[str, pd.DataFrame]
 ) -> Tuple[pd.Series, pd.Series, pd.Series, pd.Series]:
@@ -119,7 +124,7 @@ def get_phase_peak_sums(
     return own_buildup, own_counter, opp_buildup, opp_counter
 
 
-def export_phases_df(dataset: pd.DataFrame, suffix: str = ""):
+def export_phases_df(dataset: pd.DataFrame, suffix: str = "") -> None:
     dfs = get_dataframes_for_phases(dataset, suffix)
     own_buildup, own_counter, opp_buildup, opp_counter = get_phase_peak_sums(
         dfs

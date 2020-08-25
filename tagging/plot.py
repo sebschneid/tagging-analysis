@@ -176,6 +176,9 @@ def add_zone_percentage(percentages, zone, y, name, ax):
 
 def make_phase_plot_for_dataset(
     data_path: pathlib.Path,
+    filter_time: False,
+    seconds_start: float = None,
+    seconds_stop: float = None,
     home_possession_name="possesion",
     away_counter_name="negative_transition",
     away_possession_name="pressing",
@@ -197,7 +200,10 @@ def make_phase_plot_for_dataset(
         away_possession_name,
         home_counter_name,
     )
-
+    
+    if filter_time:
+        dfs = {key: data.filter_time(df, seconds_start, seconds_stop) for key, df in dfs.items()}
+    
     (
         own_buildup,
         own_counter,
