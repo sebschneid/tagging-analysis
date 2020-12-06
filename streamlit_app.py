@@ -309,11 +309,11 @@ if config_file is not None:
     st.subheader("Export Table")
     st.write(df_extraction)
 
-    if st.button("Download Dataframe as CSV"):
+    if st.button("Create link to download data!"):
         tmp_download_link = helpers.download_link(
             object_to_download=df_extraction,
             download_filename="AggregationExport.csv",
-            download_link_text="Create link to download data!",
+            download_link_text="Download Dataframe as CSV",
             index=True,
         )
         st.markdown(tmp_download_link, unsafe_allow_html=True)
