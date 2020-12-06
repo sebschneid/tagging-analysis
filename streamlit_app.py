@@ -11,7 +11,7 @@ upload_path = data_path / "upload"
 uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
 st.header("Dataset format")
 naming_scheme = st.radio("Naming Scheme for phases", ["old", "new"])
-naming_suffix = st.text_input("Suffix for relevant phase names", value="_peak")
+naming_suffix = st.text_input("Suffix for relevant phase names", value="")
 
 st.sidebar.header("Plot Selection")
 add_halftimes = st.sidebar.checkbox("Graphs for both halftimes", value=True)
