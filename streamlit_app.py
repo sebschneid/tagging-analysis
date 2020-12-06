@@ -273,16 +273,19 @@ st.header("Export data")
 data_files = st.file_uploader(
     "Upload data files", type="csv", accept_multiple_files=True
 )
-for data_file in data_files:
-    dataset = data_file.name.rstrip(".csv")
-    upload_path = data_path / dataset
+if data_files:
+    with st.spinner("Extracting data..."):
+        for data_file in data_files:
+            dataset = data_file.name.rstrip(".csv")
+            upload_path = data_path / dataset
 
-    data.extract_single_csv(
-        data_file,
-        data_path,
-        dataset_name=dataset,
-        file_from_disk=False,
-    )
+            data.extract_single_csv(
+                data_file,
+                data_path,
+                dataset_name=dataset,
+                file_from_disk=False,
+            )
+    st.success("Finished extracting data.")
 
 config_file = st.file_uploader(
     "Upload config file for data export", type="json"
@@ -306,12 +309,11 @@ if config_file is not None:
     st.subheader("Export Table")
     st.write(df_extraction)
 
-
-if st.button("Download Dataframe as CSV"):
-    tmp_download_link = helpers.download_link(
-        object_to_download=df_extraction,
-        download_filename="AggregationExport.csv",
-        download_link_text="Click here to download data!",
-        index=True,
-    )
-    st.markdown(tmp_download_link, unsafe_allow_html=True)
+    if st.button("Download Dataframe as CSV"):
+        tmp_download_link = helpers.download_link(
+            object_to_download=df_extraction,
+            download_filename="AggregationExport.csv",
+            download_link_text="Create link to download data!",
+            index=True,
+        )
+        st.markdown(tmp_download_link, unsafe_allow_html=True)
