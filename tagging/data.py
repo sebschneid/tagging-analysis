@@ -6,6 +6,7 @@ from typing import Dict, List, Tuple
 import pandas as pd
 import numpy as np
 from slugify import slugify
+import io
 
 from tagging import helpers
 
@@ -14,15 +15,18 @@ ZONES = list(range(12))
 
 
 def extract_single_csv(
-    input_file: pathlib.Path, output_path: pathlib.Path, file_from_disk=True
+    input_file: pathlib.Path,
+    output_path: pathlib.Path,
+    file_from_disk=True,
+    dataset_name="upload",
 ):
+    print(input_file.name)
     if file_from_disk:
         with open(input_file) as file:
             content = np.array(file.readlines())
             dataset_name = input_file.name.rstrip(".csv")
     else:
-        content = np.array(input_file.readlines())
-        dataset_name = "upload"
+        content = input_file.read().decode("utf-8").split("\n")
 
     if not os.path.exists(output_path):
         os.mkdir(output_path)
@@ -84,7 +88,12 @@ def preprocess_data(
     filename: str,
     time_columns: List[str] = ["time", "start", "stop"],
 ) -> pd.DataFrame:
-    df = pd.read_csv(file_path / filename, skiprows=1, header=0, sep=";")
+    df = pd.read_csv(
+        file_path / filename,
+        skiprows=1,
+        header=0,
+        sep=";",
+    )
     df = df.rename(helpers.normalize_column_name, axis="columns")
     for column in time_columns:
         df = df.assign(
@@ -127,8 +136,22 @@ def get_phase_peak_sums(
     return own_buildup, own_counter, opp_buildup, opp_counter
 
 
-def export_phases_df(dataset: pd.DataFrame, suffix: str = "") -> None:
-    dfs = get_dataframes_for_phases(dataset, suffix)
+def export_phases_df(
+    data_path: pathlib.Path,
+    file_suffix: str,
+    home_possession_name: str,
+    away_counter_name: str,
+    away_possession_name: str,
+    home_counter_name: str,
+) -> None:
+    dfs = get_dataframes_for_phases(
+        data_path,
+        file_suffix,
+        home_possession_name,
+        away_counter_name,
+        away_possession_name,
+        home_counter_name,
+    )
     own_buildup, own_counter, opp_buildup, opp_counter = get_phase_peak_sums(
         dfs
     )
@@ -142,7 +165,8 @@ def export_phases_df(dataset: pd.DataFrame, suffix: str = "") -> None:
         "opp_buildup",
         "opp_counter",
     ]
-    df_phases.to_csv(f"../data/{dataset}_phases.csv")
+    # df_phases.to_csv(f"{data_path}_phases.csv")
+    return df_phases
 
 
 def duration_overview(
@@ -157,7 +181,7 @@ def duration_overview(
 
 def aggregate_phases(
     data_path: pathlib.Path,
-    filter_time: False,
+    filter_time: bool = False,
     seconds_start: float = None,
     seconds_stop: float = None,
     file_suffix: str = "",

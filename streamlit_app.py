@@ -1,13 +1,13 @@
 import pathlib
 import shutil
+import json
 
+import pandas as pd
 import streamlit as st
 
-from tagging import data, plot, helpers
+from tagging import data, plot, helpers, extract
 
 data_path = pathlib.Path("/tmp")
-upload_path = data_path / "upload"
-
 uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
 st.header("Dataset format")
 naming_scheme = st.radio("Naming Scheme for phases", ["old", "new"])
@@ -39,11 +39,9 @@ minute_start = st.sidebar.number_input(
     "Start minute considered in video",
     value=0,
 )
-print(type(minute_start))
 second_start = st.sidebar.number_input(
     "Start second considered im video", value=0
 )
-print(type(second_start))
 seconds_start = int(minute_start * 60 + second_start)
 
 minute_stop = st.sidebar.number_input(
@@ -71,7 +69,15 @@ if naming_scheme == "new":
 result = f"{score_home} - {score_away}"
 
 if uploaded_file is not None:
-    data.extract_single_csv(uploaded_file, data_path, file_from_disk=False)
+    dataset = uploaded_file.name.rstrip(".csv")
+    upload_path = data_path / dataset
+
+    data.extract_single_csv(
+        uploaded_file,
+        data_path,
+        dataset_name=dataset,
+        file_from_disk=False,
+    )
 
     if st.button("Create graphs"):
         # part time
@@ -132,6 +138,16 @@ if uploaded_file is not None:
             away_team=team_away,
             result=result,
             match_meta=match_meta,
+        )
+        st.write(
+            data.export_phases_df(
+                data_path=upload_path,
+                file_suffix=naming_suffix,
+                home_possession_name=home_possession_name,
+                away_counter_name=away_counter_name,
+                away_possession_name=away_possession_name,
+                home_counter_name=home_counter_name,
+            )
         )
 
         st.subheader("Graph for selected timeframe")
@@ -250,3 +266,52 @@ if uploaded_file is not None:
             st.pyplot(fig_second_half)
 
         shutil.rmtree(upload_path)
+
+
+st.header("Export data")
+
+data_files = st.file_uploader(
+    "Upload data files", type="csv", accept_multiple_files=True
+)
+for data_file in data_files:
+    dataset = data_file.name.rstrip(".csv")
+    upload_path = data_path / dataset
+
+    data.extract_single_csv(
+        data_file,
+        data_path,
+        dataset_name=dataset,
+        file_from_disk=False,
+    )
+
+config_file = st.file_uploader(
+    "Upload config file for data export", type="json"
+)
+if config_file is not None:
+    json_config = json.load(config_file)
+    st.write(json_config)
+
+    aggregation_rows = []
+    for opponent, oppenent_config in json_config.items():
+        extraction_config = extract.ExtractionConfig(
+            opponent=opponent, data_path=data_path / opponent, **oppenent_config
+        )
+        aggregation_row = extract.AggregationRow.create_from_config(
+            extraction_config
+        )
+        aggregation_rows.append(aggregation_row)
+
+    df_extraction = extract.extract_rows(aggregation_rows)
+
+    st.subheader("Export Table")
+    st.write(df_extraction)
+
+
+if st.button("Download Dataframe as CSV"):
+    tmp_download_link = helpers.download_link(
+        object_to_download=df_extraction,
+        download_filename="AggregationExport.csv",
+        download_link_text="Click here to download data!",
+        index=True,
+    )
+    st.markdown(tmp_download_link, unsafe_allow_html=True)
