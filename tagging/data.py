@@ -100,9 +100,12 @@ def preprocess_data(
     return df
 
 
-def filter_time(df: pd.DataFrame, seconds_start, seconds_stop, time_column = "start_seconds") -> pd.DataFrame:
-    return df.loc[(df[time_column] >= seconds_start) & (df[time_column] <= seconds_stop)]
-    
+def filter_times(
+    df: pd.DataFrame, seconds_start, seconds_stop, time_column="start_seconds"
+) -> pd.DataFrame:
+    return df.loc[
+        (df[time_column] >= seconds_start) & (df[time_column] <= seconds_stop)
+    ]
 
 
 def get_phase_peak_sums(
@@ -130,7 +133,8 @@ def export_phases_df(dataset: pd.DataFrame, suffix: str = "") -> None:
         dfs
     )
     df_phases = pd.concat(
-        [own_buildup, own_counter, opp_buildup, opp_counter], axis=1,
+        [own_buildup, own_counter, opp_buildup, opp_counter],
+        axis=1,
     )
     df_phases.columns = [
         "own_buildup",
@@ -149,3 +153,40 @@ def duration_overview(
         print(
             f"{name:>15}: duration_sum={df[dur_column].sum() / 60:<5.2f} min; duration_mean={df[dur_column].mean():<5.2f} s"
         )
+
+
+def aggregate_phases(
+    data_path: pathlib.Path,
+    filter_time: False,
+    seconds_start: float = None,
+    seconds_stop: float = None,
+    file_suffix: str = "",
+    home_possession_name="possesion",
+    away_counter_name="negative_transition",
+    away_possession_name="pressing",
+    home_counter_name="positive_transition",
+) -> Tuple[pd.Series, pd.Series, pd.Series, pd.Series]:
+    # GET AGGREGATED DATA
+    dfs = get_dataframes_for_phases(
+        data_path,
+        file_suffix,
+        home_possession_name,
+        away_counter_name,
+        away_possession_name,
+        home_counter_name,
+    )
+
+    if filter_time:
+        dfs = {
+            key: filter_times(df, seconds_start, seconds_stop)
+            for key, df in dfs.items()
+        }
+
+    (
+        own_buildup,
+        own_counter,
+        opp_buildup,
+        opp_counter,
+    ) = get_phase_peak_sums(dfs)
+
+    return own_buildup, own_counter, opp_buildup, opp_counter

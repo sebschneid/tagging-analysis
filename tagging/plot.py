@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple, Optional
 import pathlib
 
 import numpy as np
@@ -182,19 +182,10 @@ def add_zone_percentage(percentages, zone, y, name, ax):
 
 
 def make_phase_plot_for_dataset(
-    data_path: pathlib.Path,
-    filter_time: False,
-    add_own_buildup: bool = True,
-    add_own_counter: bool = True,
-    add_opp_buildup: bool = True,
-    add_opp_counter: bool = True,
-    seconds_start: float = None,
-    seconds_stop: float = None,
-    home_possession_name="possesion",
-    away_counter_name="negative_transition",
-    away_possession_name="pressing",
-    home_counter_name="positive_transition",
-    file_suffix: str = "",
+    own_buildup: Optional[pd.Series] = None,
+    own_counter: Optional[pd.Series] = None,
+    opp_buildup: Optional[pd.Series] = None,
+    opp_counter: Optional[pd.Series] = None,
     ymin: float = -35,
     ymax: float = 35,
     home_team: str = "",
@@ -202,35 +193,12 @@ def make_phase_plot_for_dataset(
     result: str = "",
     match_meta: str = "",
 ):
-    # GET AGGREGATED DATA
-    dfs = data.get_dataframes_for_phases(
-        data_path,
-        file_suffix,
-        home_possession_name,
-        away_counter_name,
-        away_possession_name,
-        home_counter_name,
-    )
-
-    if filter_time:
-        dfs = {
-            key: data.filter_time(df, seconds_start, seconds_stop)
-            for key, df in dfs.items()
-        }
-
-    (
-        own_buildup,
-        own_counter,
-        opp_buildup,
-        opp_counter,
-    ) = data.get_phase_peak_sums(dfs)
-
     # CREATE PLOT
     fig, ax = plt.subplots(figsize=DEFAULT_FIGSIZE)
 
     # BAR PLOTS
     # own bars
-    if add_own_buildup:
+    if own_buildup is not None:
         ax.bar(
             data.ZONES,
             own_buildup,
@@ -240,7 +208,7 @@ def make_phase_plot_for_dataset(
             ec=BORDER_COLOR,
         )
 
-    if add_own_counter and add_own_buildup:
+    if own_counter is not None and own_buildup is not None:
         ax.bar(
             data.ZONES,
             own_counter,
@@ -250,7 +218,7 @@ def make_phase_plot_for_dataset(
             label="own counters",
             ec=BORDER_COLOR,
         )
-    elif add_own_counter:
+    elif own_counter is not None:
         ax.bar(
             data.ZONES,
             own_counter,
@@ -261,7 +229,7 @@ def make_phase_plot_for_dataset(
         )
 
     # opponent bars
-    if add_opp_buildup:
+    if opp_buildup is not None:
         ax.bar(
             data.ZONES,
             -opp_buildup,
@@ -271,7 +239,7 @@ def make_phase_plot_for_dataset(
             ec=BORDER_COLOR,
         )
 
-    if add_opp_counter and add_opp_buildup:
+    if opp_counter is not None and opp_buildup is not None:
         ax.bar(
             data.ZONES,
             -opp_counter,
@@ -281,7 +249,7 @@ def make_phase_plot_for_dataset(
             label="oppenent counters",
             ec=BORDER_COLOR,
         )
-    elif add_opp_counter:
+    elif opp_counter is not None:
         ax.bar(
             data.ZONES,
             -opp_counter,
@@ -334,14 +302,16 @@ def make_phase_plot_for_dataset(
     ## ZONE PERCENTAGES
     own_totals = []
     for flag, total in zip(
-        [add_own_buildup, add_own_counter], [own_buildup, own_counter]
+        [own_buildup is not None, own_counter is not None],
+        [own_buildup, own_counter],
     ):
         if flag:
             own_totals.append(total)
 
     opp_totals = []
     for flag, total in zip(
-        [add_opp_buildup, add_opp_counter], [opp_buildup, opp_counter]
+        [opp_buildup is not None, opp_counter is not None],
+        [opp_buildup, opp_counter],
     ):
         if flag:
             opp_totals.append(total)
@@ -428,7 +398,7 @@ def make_phase_plot_for_dataset(
         fw="bold",
         ax=ax,
     )
-    if add_own_buildup:
+    if own_buildup is not None:
         add_summary_text(
             "own_buildup",
             own_buildup.sum(),
@@ -439,7 +409,7 @@ def make_phase_plot_for_dataset(
             ax=ax,
         )
 
-    if add_own_counter:
+    if own_counter is not None:
         add_summary_text(
             "own_counter",
             own_counter.sum(),
@@ -459,7 +429,7 @@ def make_phase_plot_for_dataset(
         fw="bold",
         ax=ax,
     )
-    if add_opp_buildup:
+    if opp_buildup is not None:
         add_summary_text(
             "opp_buildup",
             opp_buildup.sum(),
@@ -470,7 +440,7 @@ def make_phase_plot_for_dataset(
             ax=ax,
         )
 
-        if add_opp_counter:
+        if opp_counter is not None:
             add_summary_text(
                 "opp_counter",
                 opp_counter.sum(),

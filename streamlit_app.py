@@ -74,7 +74,13 @@ if uploaded_file is not None:
     data.extract_single_csv(uploaded_file, data_path, file_from_disk=False)
 
     if st.button("Create graphs"):
-        fig_part_time, ax = plot.make_phase_plot_for_dataset(
+        # part time
+        (
+            own_buildup,
+            own_counter,
+            opp_buildup,
+            opp_counter,
+        ) = data.aggregate_phases(
             data_path=upload_path,
             filter_time=True,
             seconds_start=seconds_start,
@@ -84,6 +90,12 @@ if uploaded_file is not None:
             away_possession_name=away_possession_name,
             home_counter_name=home_counter_name,
             file_suffix=naming_suffix,
+        )
+        fig_part_time, ax = plot.make_phase_plot_for_dataset(
+            own_buildup=own_buildup,
+            own_counter=own_counter,
+            opp_buildup=opp_buildup,
+            opp_counter=opp_counter,
             ymin=ymin,
             ymax=ymax,
             home_team=team_home,
@@ -92,7 +104,13 @@ if uploaded_file is not None:
             match_meta=match_meta,
         )
 
-        fig_full_time, ax = plot.make_phase_plot_for_dataset(
+        # full time
+        (
+            own_buildup,
+            own_counter,
+            opp_buildup,
+            opp_counter,
+        ) = data.aggregate_phases(
             data_path=upload_path,
             filter_time=False,
             seconds_start=None,
@@ -102,6 +120,12 @@ if uploaded_file is not None:
             away_possession_name=away_possession_name,
             home_counter_name=home_counter_name,
             file_suffix=naming_suffix,
+        )
+        fig_full_time, ax = plot.make_phase_plot_for_dataset(
+            own_buildup=own_buildup,
+            own_counter=own_counter,
+            opp_buildup=opp_buildup,
+            opp_counter=opp_counter,
             ymin=ymin,
             ymax=ymax,
             home_team=team_home,
@@ -116,13 +140,47 @@ if uploaded_file is not None:
         st.subheader("Graph for complete match")
         st.pyplot(fig_full_time)
 
+        if add_poss_vs_counter:
+            fig_own_poss, ax = plot.make_phase_plot_for_dataset(
+                own_buildup=own_buildup,
+                opp_counter=opp_counter,
+                ymin=ymin,
+                ymax=ymax,
+                home_team=team_home,
+                away_team=team_away,
+                result=result,
+                match_meta=match_meta,
+            )
+
+            fig_own_counter, ax = plot.make_phase_plot_for_dataset(
+                own_counter=own_counter,
+                opp_buildup=opp_buildup,
+                ymin=ymin,
+                ymax=ymax,
+                home_team=team_home,
+                away_team=team_away,
+                result=result,
+                match_meta=match_meta,
+            )
+
+            st.subheader("Graphs for possession vs counter")
+
+            st.markdown("#### Own possession vs. opponent counter")
+            st.pyplot(fig_own_poss)
+
+            st.markdown("#### Own counter vs. opponent possession")
+            st.pyplot(fig_own_counter)
+
         if add_halftimes:
+            # first half
             seconds_start_first_half = seconds_start
             seconds_stop_first_half = seconds_stop / 2
-
-            seconds_start_second_half = seconds_stop / 2
-            seconds_stop_second_half = seconds_stop
-            fig_first_half, ax = plot.make_phase_plot_for_dataset(
+            (
+                own_buildup,
+                own_counter,
+                opp_buildup,
+                opp_counter,
+            ) = data.aggregate_phases(
                 data_path=upload_path,
                 filter_time=True,
                 seconds_start=seconds_start_first_half,
@@ -132,6 +190,12 @@ if uploaded_file is not None:
                 away_possession_name=away_possession_name,
                 home_counter_name=home_counter_name,
                 file_suffix=naming_suffix,
+            )
+            fig_first_half, ax = plot.make_phase_plot_for_dataset(
+                own_buildup=own_buildup,
+                own_counter=own_counter,
+                opp_buildup=opp_buildup,
+                opp_counter=opp_counter,
                 ymin=ymin / 2,
                 ymax=ymax / 2,
                 home_team=team_home,
@@ -139,7 +203,16 @@ if uploaded_file is not None:
                 result=result,
                 match_meta=match_meta,
             )
-            fig_second_half, ax = plot.make_phase_plot_for_dataset(
+
+            # second half
+            seconds_start_second_half = seconds_stop_first_half
+            seconds_stop_second_half = seconds_stop
+            (
+                own_buildup,
+                own_counter,
+                opp_buildup,
+                opp_counter,
+            ) = data.aggregate_phases(
                 data_path=upload_path,
                 filter_time=True,
                 seconds_start=seconds_start_second_half,
@@ -149,6 +222,12 @@ if uploaded_file is not None:
                 away_possession_name=away_possession_name,
                 home_counter_name=home_counter_name,
                 file_suffix=naming_suffix,
+            )
+            fig_second_half, ax = plot.make_phase_plot_for_dataset(
+                own_buildup=own_buildup,
+                own_counter=own_counter,
+                opp_buildup=opp_buildup,
+                opp_counter=opp_counter,
                 ymin=ymin / 2,
                 ymax=ymax / 2,
                 home_team=team_home,
@@ -169,58 +248,5 @@ if uploaded_file is not None:
 
             st.markdown("#### Second Half")
             st.pyplot(fig_second_half)
-
-        if add_poss_vs_counter:
-            fig_own_poss, ax = plot.make_phase_plot_for_dataset(
-                data_path=upload_path,
-                filter_time=False,
-                seconds_start=None,
-                seconds_stop=None,
-                add_own_buildup=True,
-                add_own_counter=False,
-                add_opp_buildup=False,
-                add_opp_counter=True,
-                home_possession_name=home_possession_name,
-                away_counter_name=away_counter_name,
-                away_possession_name=away_possession_name,
-                home_counter_name=home_counter_name,
-                file_suffix=naming_suffix,
-                ymin=ymin / 2,
-                ymax=ymax / 2,
-                home_team=team_home,
-                away_team=team_away,
-                result=result,
-                match_meta=match_meta,
-            )
-
-            fig_own_counter, ax = plot.make_phase_plot_for_dataset(
-                data_path=upload_path,
-                filter_time=False,
-                seconds_start=None,
-                seconds_stop=None,
-                add_own_buildup=False,
-                add_own_counter=True,
-                add_opp_buildup=True,
-                add_opp_counter=False,
-                home_possession_name=home_possession_name,
-                away_counter_name=away_counter_name,
-                away_possession_name=away_possession_name,
-                home_counter_name=home_counter_name,
-                file_suffix=naming_suffix,
-                ymin=ymin / 2,
-                ymax=ymax / 2,
-                home_team=team_home,
-                away_team=team_away,
-                result=result,
-                match_meta=match_meta,
-            )
-
-            st.subheader("Graphs for possession vs counter")
-
-            st.markdown("#### Own possession vs. opponent counter")
-            st.pyplot(fig_own_poss)
-
-            st.markdown("#### Own counter vs. opponent possession")
-            st.pyplot(fig_own_counter)
 
         shutil.rmtree(upload_path)
