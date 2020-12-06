@@ -1,3 +1,4 @@
+from typing import List
 import pathlib
 
 import numpy as np
@@ -103,20 +104,26 @@ PERCENTAGE_TEXT_PARAMS = {
     "fontsize": 20,
     "va": "center",
     "ha": "center",
-    "bbox": {"boxstyle": "round", "facecolor": "aliceblue", "alpha": 0.8,},
+    "bbox": {
+        "boxstyle": "round",
+        "facecolor": "aliceblue",
+        "alpha": 0.8,
+    },
 }
 
 
-def get_sums_in_zones(buildup: pd.Series, counter: pd.Series):
-    overall = buildup + counter
+def get_sums_in_zones(totals: List[pd.Series]):
+    overall = sum(totals)
     return {
         zone: overall.loc[start:end].sum()
         for zone, (start, end) in ZONE_RANGES.items()
     }
 
 
-def get_percentages_in_zones(buildup: pd.Series, counter: pd.Series):
-    overall = buildup + counter
+def get_percentages_in_zones(
+    totals: List[pd.Series],
+):
+    overall = sum(totals)
     overall_sum = overall.sum()
     return {
         zone: overall.loc[start:end].sum() / overall_sum
@@ -133,7 +140,7 @@ def get_mid_of_zone(zone: str) -> float:
 
 
 def get_positive_yticks(x, pos):
-    return f"{abs(x)}"
+    return f"{int(abs(x))}"
 
 
 def add_zone_text(zone: str, team_sums, y, ax):
@@ -177,6 +184,10 @@ def add_zone_percentage(percentages, zone, y, name, ax):
 def make_phase_plot_for_dataset(
     data_path: pathlib.Path,
     filter_time: False,
+    add_own_buildup: bool = True,
+    add_own_counter: bool = True,
+    add_opp_buildup: bool = True,
+    add_opp_counter: bool = True,
     seconds_start: float = None,
     seconds_stop: float = None,
     home_possession_name="possesion",
@@ -200,10 +211,13 @@ def make_phase_plot_for_dataset(
         away_possession_name,
         home_counter_name,
     )
-    
+
     if filter_time:
-        dfs = {key: data.filter_time(df, seconds_start, seconds_stop) for key, df in dfs.items()}
-    
+        dfs = {
+            key: data.filter_time(df, seconds_start, seconds_stop)
+            for key, df in dfs.items()
+        }
+
     (
         own_buildup,
         own_counter,
@@ -216,42 +230,66 @@ def make_phase_plot_for_dataset(
 
     # BAR PLOTS
     # own bars
-    ax.bar(
-        data.ZONES,
-        own_buildup,
-        color=KPI_COLORS["own_buildup"],
-        hatch=BUILDUP_HATCH,
-        label="own buildups",
-        ec=BORDER_COLOR,
-    )
-    ax.bar(
-        data.ZONES,
-        own_counter,
-        bottom=own_buildup,
-        color=KPI_COLORS["own_counter"],
-        hatch=COUNTER_HATCH,
-        label="own counters",
-        ec=BORDER_COLOR,
-    )
+    if add_own_buildup:
+        ax.bar(
+            data.ZONES,
+            own_buildup,
+            color=KPI_COLORS["own_buildup"],
+            hatch=BUILDUP_HATCH,
+            label="own buildups",
+            ec=BORDER_COLOR,
+        )
+
+    if add_own_counter and add_own_buildup:
+        ax.bar(
+            data.ZONES,
+            own_counter,
+            bottom=own_buildup,
+            color=KPI_COLORS["own_counter"],
+            hatch=COUNTER_HATCH,
+            label="own counters",
+            ec=BORDER_COLOR,
+        )
+    elif add_own_counter:
+        ax.bar(
+            data.ZONES,
+            own_counter,
+            color=KPI_COLORS["own_counter"],
+            hatch=COUNTER_HATCH,
+            label="own counters",
+            ec=BORDER_COLOR,
+        )
 
     # opponent bars
-    ax.bar(
-        data.ZONES,
-        -opp_buildup,
-        color=KPI_COLORS["opp_buildup"],
-        hatch=BUILDUP_HATCH,
-        label="opponent buildups",
-        ec=BORDER_COLOR,
-    )
-    ax.bar(
-        data.ZONES,
-        -opp_counter,
-        bottom=-opp_buildup,
-        color=KPI_COLORS["opp_counter"],
-        hatch=COUNTER_HATCH,
-        label="oppenent counters",
-        ec=BORDER_COLOR,
-    )
+    if add_opp_buildup:
+        ax.bar(
+            data.ZONES,
+            -opp_buildup,
+            color=KPI_COLORS["opp_buildup"],
+            hatch=BUILDUP_HATCH,
+            label="opponent buildups",
+            ec=BORDER_COLOR,
+        )
+
+    if add_opp_counter and add_opp_buildup:
+        ax.bar(
+            data.ZONES,
+            -opp_counter,
+            bottom=-opp_buildup,
+            color=KPI_COLORS["opp_counter"],
+            hatch=COUNTER_HATCH,
+            label="oppenent counters",
+            ec=BORDER_COLOR,
+        )
+    elif add_opp_counter:
+        ax.bar(
+            data.ZONES,
+            -opp_counter,
+            color=KPI_COLORS["opp_counter"],
+            hatch=COUNTER_HATCH,
+            label="oppenent counters",
+            ec=BORDER_COLOR,
+        )
 
     # zeroline
     ax.axhline(lw=2, ls="-", color="black")
@@ -294,8 +332,22 @@ def make_phase_plot_for_dataset(
     )
 
     ## ZONE PERCENTAGES
-    own_percentages = get_percentages_in_zones(own_buildup, own_counter)
-    opp_percentages = get_percentages_in_zones(opp_buildup, opp_counter)
+    own_totals = []
+    for flag, total in zip(
+        [add_own_buildup, add_own_counter], [own_buildup, own_counter]
+    ):
+        if flag:
+            own_totals.append(total)
+
+    opp_totals = []
+    for flag, total in zip(
+        [add_opp_buildup, add_opp_counter], [opp_buildup, opp_counter]
+    ):
+        if flag:
+            opp_totals.append(total)
+
+    own_percentages = get_percentages_in_zones(own_totals)
+    opp_percentages = get_percentages_in_zones(opp_totals)
 
     # safe
     add_zone_percentage(own_percentages, "safe", ymax * TEXT_Y_MARGIN, "", ax)
@@ -337,8 +389,8 @@ def make_phase_plot_for_dataset(
     )
 
     ## SUM OF ALL ATTACKS
-    own_sums = get_sums_in_zones(own_buildup, own_counter)
-    opp_sums = get_sums_in_zones(opp_buildup, opp_counter)
+    own_sums = get_sums_in_zones(own_totals)
+    opp_sums = get_sums_in_zones(opp_totals)
 
     own_kpi = own_sums["risk"] + own_sums["warning"] + own_sums["danger"]
     opp_kpi = opp_sums["risk"] + opp_sums["warning"] + opp_sums["danger"]
@@ -352,8 +404,8 @@ def make_phase_plot_for_dataset(
     add_zone_text("danger", opp_sums, ymin, ax)
 
     ## SUMMARY TEXTS
-    own_all = own_buildup + own_counter
-    opp_all = opp_buildup + opp_counter
+    own_all = sum(own_totals)
+    opp_all = sum(opp_totals)
 
     INITIAL_HEIGHT = 0
     HEIGHT_MARGIN_PERCENT = 1.00
@@ -376,24 +428,27 @@ def make_phase_plot_for_dataset(
         fw="bold",
         ax=ax,
     )
-    add_summary_text(
-        "own_buildup",
-        own_buildup.sum(),
-        y=y_top[1],
-        text_va="bottom",
-        box_height=SUMMARY_BOX_HEIGHT,
-        fw="normal",
-        ax=ax,
-    )
-    add_summary_text(
-        "own_counter",
-        own_counter.sum(),
-        y=y_top[2],
-        text_va="bottom",
-        box_height=SUMMARY_BOX_HEIGHT,
-        fw="normal",
-        ax=ax,
-    )
+    if add_own_buildup:
+        add_summary_text(
+            "own_buildup",
+            own_buildup.sum(),
+            y=y_top[1],
+            text_va="bottom",
+            box_height=SUMMARY_BOX_HEIGHT,
+            fw="normal",
+            ax=ax,
+        )
+
+    if add_own_counter:
+        add_summary_text(
+            "own_counter",
+            own_counter.sum(),
+            y=y_top[2],
+            text_va="bottom",
+            box_height=SUMMARY_BOX_HEIGHT,
+            fw="normal",
+            ax=ax,
+        )
 
     add_summary_text(
         "all",
@@ -404,77 +459,27 @@ def make_phase_plot_for_dataset(
         fw="bold",
         ax=ax,
     )
-    add_summary_text(
-        "opp_buildup",
-        opp_buildup.sum(),
-        y=y_bot[1],
-        text_va="top",
-        box_height=-SUMMARY_BOX_HEIGHT,
-        fw="normal",
-        ax=ax,
-    )
-    add_summary_text(
-        "opp_counter",
-        opp_counter.sum(),
-        y=y_bot[2],
-        text_va="top",
-        box_height=-SUMMARY_BOX_HEIGHT,
-        fw="normal",
-        ax=ax,
-    )
-
-    ## RECTANGLES FOR SUMMARIES
-    X_MARGIN = 0.02
-    Y_MARGIN_PERCENT = 0.995
-    x_summary_rectangle = get_xrange_for_zone("danger")[1] + X_MARGIN
-    ax.add_patch(
-        patches.Rectangle(
-            xy=(x_summary_rectangle, 0.0),
-            height=ymax * Y_MARGIN_PERCENT,
-            width=DEFAULT_XMAX - x_summary_rectangle - X_MARGIN,
-            ec="black",
-            fill=None,
-            lw=1.5,
+    if add_opp_buildup:
+        add_summary_text(
+            "opp_buildup",
+            opp_buildup.sum(),
+            y=y_bot[1],
+            text_va="top",
+            box_height=-SUMMARY_BOX_HEIGHT,
+            fw="normal",
+            ax=ax,
         )
-    )
 
-    ax.add_patch(
-        patches.Rectangle(
-            xy=(x_summary_rectangle, 0.0),
-            height=ymin * Y_MARGIN_PERCENT,
-            width=DEFAULT_XMAX - x_summary_rectangle - X_MARGIN,
-            ec="black",
-            fill=None,
-            lw=1.5,
-        )
-    )
-
-    ## RECTANGLES FOR ZONES
-    X_MARGIN = 0.0
-    for zone in ZONE_RANGES.keys():
-        if zone == "all":
-            continue
-        x_range = get_xrange_for_zone(zone)
-        ax.add_patch(
-            patches.Rectangle(
-                xy=(x_range[0] + X_MARGIN, 0.1),
-                height=ymax - 0.2,
-                width=x_range[1] - x_range[0],
-                ec="black",
-                fill=None,
-                lw=0.5,
+        if add_opp_counter:
+            add_summary_text(
+                "opp_counter",
+                opp_counter.sum(),
+                y=y_bot[2],
+                text_va="top",
+                box_height=-SUMMARY_BOX_HEIGHT,
+                fw="normal",
+                ax=ax,
             )
-        )
-        ax.add_patch(
-            patches.Rectangle(
-                xy=(x_range[0] + X_MARGIN, -0.1),
-                height=ymin + 0.2,
-                width=x_range[1] - x_range[0],
-                ec="black",
-                fill=None,
-                lw=0.5,
-            )
-        )
 
     ## OVERALL MEDIAN
     own_progression_kpi = np.mean(own_all.index.repeat(own_all.values))
@@ -492,8 +497,9 @@ def make_phase_plot_for_dataset(
         ylabel="Number of attacks",
         xlabel="Progression peak (most outplayed opponents during attack)",
     )
-    ax.set_yticks(np.arange(ymin, ymax + 1, 1), minor=True)
-    ax.set_yticks(np.arange(ymin, ymax + 1, 5))
+    ax.yaxis.set_major_locator(ticker.AutoLocator())
+    ax.yaxis.set_minor_locator(ticker.AutoMinorLocator())
+
     ax.yaxis.set_major_formatter(ticker.FuncFormatter(get_positive_yticks))
     ax.set_xticks(np.arange(XTICKS_MIN, XTICKS_MAX + 1, 1))
     ax.set_axisbelow(True)

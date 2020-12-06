@@ -24,3 +24,10 @@ def get_total_seconds(time_split: List[str]) -> float:
         int(time_entry) * SECONDS_FOR_UNIT[unit]
         for time_entry, unit in zip(time_split, used_units)
     )
+
+
+def format_total_seconds(total_seconds: int) -> str:
+    # output "MM:SS"
+    minutes = int(total_seconds // 60)
+    seconds = int(total_seconds - minutes * 60)
+    return f"{minutes:02d}:{seconds:02d}"
