@@ -20,7 +20,6 @@ def extract_single_csv(
     file_from_disk=True,
     dataset_name="upload",
 ):
-    print(input_file.name)
     if file_from_disk:
         with open(input_file) as file:
             content = np.array(file.readlines())
@@ -64,36 +63,62 @@ def get_dataframes_for_phases(
     away_counter_name: str,
     away_possession_name: str,
     home_counter_name: str,
+    filter_time: bool,
+    seconds_start: int,
+    seconds_stop: int,
 ) -> Dict[str, pd.DataFrame]:
     file_home_possession = f"{home_possession_name}{suffix}.csv"
     file_away_possession = f"{away_possession_name}{suffix}.csv"
     file_home_counter = f"{home_counter_name}{suffix}.csv"
     file_away_counter = f"{away_counter_name}{suffix}.csv"
 
-    df_home_possession = preprocess_data(file_path, file_home_possession)
-    df_away_possession = preprocess_data(file_path, file_away_possession)
-    df_home_counter = preprocess_data(file_path, file_home_counter)
-    df_away_counter = preprocess_data(file_path, file_away_counter)
+    filenames = [
+        file_home_possession,
+        file_away_possession,
+        file_home_counter,
+        file_away_counter,
+    ]
+
+    keys = [
+        "home_possession",
+        "away_possession",
+        "home_counter",
+        "away_counter",
+    ]
 
     return {
-        "home_possession": df_home_possession,
-        "away_possession": df_away_possession,
-        "home_counter": df_home_counter,
-        "away_counter": df_away_counter,
+        key: preprocess_data(
+            file_path,
+            file_name,
+            filter_time,
+            seconds_start,
+            seconds_stop,
+            skiprows=1,
+            header=0,
+            sep=";",
+        )
+        for key, file_name in zip(keys, filenames)
     }
 
 
 def preprocess_data(
     file_path: pathlib.Path,
     filename: str,
+    filter_time: bool,
+    seconds_start: int,
+    seconds_stop: int,
     time_columns: List[str] = ["time", "start", "stop"],
+    rename_zones: bool = True,
+    **read_csv_kwargs,
 ) -> pd.DataFrame:
+    print(f"Reading {file_path / filename}")
+    print(f"arguments: {read_csv_kwargs}")
     df = pd.read_csv(
         file_path / filename,
-        skiprows=1,
-        header=0,
-        sep=";",
+        engine="python",
+        **read_csv_kwargs,
     )
+
     df = df.rename(helpers.normalize_column_name, axis="columns")
     for column in time_columns:
         df = df.assign(
@@ -105,16 +130,17 @@ def preprocess_data(
         )
 
     df = df.assign(duration_seconds=df["stop_seconds"] - df["start_seconds"])
-    df = df.rename(columns={column: int(column) for column in ZONES_STR})
+
+    if rename_zones:
+        df = df.rename(columns={column: int(column) for column in ZONES_STR})
+
+    if filter_time:
+        df = df.loc[
+            (df["start_seconds"] >= seconds_start)
+            & (df["start_seconds"] <= seconds_stop)
+        ]
+
     return df
-
-
-def filter_times(
-    df: pd.DataFrame, seconds_start, seconds_stop, time_column="start_seconds"
-) -> pd.DataFrame:
-    return df.loc[
-        (df[time_column] >= seconds_start) & (df[time_column] <= seconds_stop)
-    ]
 
 
 def get_phase_peak_sums(
@@ -151,6 +177,9 @@ def export_phases_df(
         away_counter_name,
         away_possession_name,
         home_counter_name,
+        filter_time=False,
+        seconds_start=None,
+        seconds_stop=None,
     )
     own_buildup, own_counter, opp_buildup, opp_counter = get_phase_peak_sums(
         dfs
@@ -198,14 +227,10 @@ def aggregate_phases(
         away_counter_name,
         away_possession_name,
         home_counter_name,
+        filter_time,
+        seconds_start,
+        seconds_stop,
     )
-
-    if filter_time:
-        dfs = {
-            key: filter_times(df, seconds_start, seconds_stop)
-            for key, df in dfs.items()
-        }
-
     (
         own_buildup,
         own_counter,
@@ -214,3 +239,51 @@ def aggregate_phases(
     ) = get_phase_peak_sums(dfs)
 
     return own_buildup, own_counter, opp_buildup, opp_counter
+
+
+def aggregate_set_pieces(
+    data_path: pathlib.Path,
+    filter_time: bool = False,
+    seconds_start: int = None,
+    seconds_stop: int = None,
+) -> Tuple[pd.Series, pd.Series]:
+    SET_PIECE_COLUMNS = [
+        "corner",
+        "free_kick",
+        "half_distance",
+        "throw_in",
+    ]
+    rename_columns = {
+        col: col.lower().replace(" ", "_") for col in SET_PIECE_COLUMNS
+    }
+
+    FILES = ["attacking_set_pieces.csv", "deffending_set_pieces.csv"]
+
+    test = preprocess_data(
+        data_path,
+        FILES[0],
+        filter_time,
+        seconds_start,
+        seconds_stop,
+        rename_zones=False,
+        sep=";",
+        header=1,
+    )
+
+    own_set_pieces, opp_set_pieces = (
+        preprocess_data(
+            data_path,
+            filename,
+            filter_time,
+            seconds_start,
+            seconds_stop,
+            rename_zones=False,
+            sep=";",
+            header=1,
+        )
+        .sum()[SET_PIECE_COLUMNS]
+        .rename(index=rename_columns)
+        for filename in FILES
+    )
+
+    return own_set_pieces, opp_set_pieces

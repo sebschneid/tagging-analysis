@@ -296,8 +296,12 @@ if config_file is not None:
 
     aggregation_rows = []
     for opponent, oppenent_config in json_config.items():
-        extraction_config = extract.ExtractionConfig(
-            opponent=opponent, data_path=data_path / opponent, **oppenent_config
+        extraction_config = extract.ExtractionConfig.parse_obj(
+            dict(
+                opponent=opponent,
+                data_path=data_path / opponent,
+                **oppenent_config,
+            )
         )
         aggregation_row = extract.AggregationRow.create_from_config(
             extraction_config
